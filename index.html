@@ -1,63 +1,89 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #f4f4f9; }
-    .chat-container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    h1 { color: #2c3e50; text-align: center; }
-    .history { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; background: #fff; }
-    .message { margin-bottom: 1rem; padding: 0.8rem; border-radius: 6px; max-width: 80%; }
-    .user { background: #e3f2fd; color: #0d47a1; margin-left: auto; border-bottom-right-radius: 0; }
-    .assistant { background: #f1f8e9; color: #2e7d32; margin-right: auto; border-bottom-left-radius: 0; white-space: pre-wrap; }
-    .controls { display: flex; gap: 10px; }
-    input { flex: 1; padding: 1rem; border: 1px solid #ccc; border-radius: 6px; }
-    button { background: #f6821f; color: white; border: none; padding: 0 2rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #e65100; }
-  </style>
+    <title>AI SOC Analyst V2</title>
+    <style>
+
+        body { font-family: monospace; padding: 20px; max-width: 800px; margin: auto; background: #f0f0f0; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: wait; }
+
+        #chat-history { 
+            margin-top: 20px; 
+            border: 1px solid #ddd; 
+            padding: 20px; 
+            background: white; 
+            min-height: 200px; 
+            max-height: 500px; 
+            overflow-y: auto; 
+        }
+        
+
+        .user-msg { color: blue; margin-bottom: 10px; font-weight: bold; }
+        .ai-msg { color: green; margin-bottom: 20px; white-space: pre-wrap; }
+        .error { color: red; }
+    </style>
 </head>
 <body>
-  <div class="chat-container">
-    <h1>SOC Assistant V2 (Durable Objects)</h1>
-    <div class="history" id="history">
-      <div class="message assistant">Hello. I am your AI SOC Assistant. Give me a log to begin.</div>
-    </div>
-    <div class="controls">
-      <input type="text" id="userInput" placeholder="Type a message or paste a log..." />
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
 
-  <script>
-    const WORKER_URL = "https://cf-ai-soc-analyst-v2.ryan-benson-lab.workers.dev"; 
-
-    async function sendMessage() {
-      const input = document.getElementById('userInput');
-      const history = document.getElementById('history');
-      const text = input.value.trim();
-      if (!text) return;
-
-      history.innerHTML += `<div class="message user">${text}</div>`;
-      input.value = '';
-      history.scrollTop = history.scrollHeight;
-
-      try {
-        const response = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text })
-        });
-        const data = await response.json();
-
-        history.innerHTML += `<div class="message assistant">${data.response}</div>`;
-        history.scrollTop = history.scrollHeight;
-      } catch (e) {
-        history.innerHTML += `<div class="message assistant" style="color:red">Error: ${e.message}</div>`;
-      }
-    }
+    <h2>🛡️ SOC Assistant (Memory Enabled)</h2>
+    <p>Paste a log line or ask a question about previous logs.</p>
     
-    document.getElementById("userInput").addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-  </script>
+    <textarea id="userInput" placeholder="Paste log here..."></textarea>
+    <br>
+    <button onclick="sendMessage()">Analyze Log</button>
+
+    <div id="chat-history">
+        <div class="ai-msg">System: I am ready. I remember context.</div>
+    </div>
+
+    <script>
+        const WORKER_URL = "https://cf-ai-soc-analyst-v2.pages.dev"; 
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const history = document.getElementById('chat-history');
+            const btn = document.querySelector('button');
+            const text = input.value.trim();
+
+            if (!text) return alert("Please enter a log.");
+
+
+            history.innerHTML += `<div class="user-msg">USER: ${text}</div>`;
+            input.value = ''; // Clear box
+
+
+            btn.disabled = true;
+            btn.innerText = "Analyzing...";
+  
+            const aiBubble = document.createElement("div");
+            aiBubble.className = "ai-msg";
+            aiBubble.innerText = "⏳ Analyzing...";
+            history.appendChild(aiBubble);
+            history.scrollTop = history.scrollHeight; 
+
+            try {
+
+                const response = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
+
+                aiBubble.innerText = "AI: " + data.response;
+
+            } catch (err) {
+                aiBubble.innerText = "Error: " + err.message;
+                aiBubble.className = "error";
+            }
+
+            btn.disabled = false;
+            btn.innerText = "Analyze Log";
+            history.scrollTop = history.scrollHeight;
+        }
+    </script>
 </body>
 </html>
