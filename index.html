@@ -29,7 +29,6 @@
   </div>
 
   <script>
-    // ⚠️ REPLACE THIS WITH YOUR WORKER URL
     const WORKER_URL = "https://cf-ai-soc-analyst-v2.ryan-benson-lab.workers.dev"; 
 
     async function sendMessage() {
@@ -38,12 +37,10 @@
       const text = input.value.trim();
       if (!text) return;
 
-      // 1. Add User Message
       history.innerHTML += `<div class="message user">${text}</div>`;
       input.value = '';
       history.scrollTop = history.scrollHeight;
 
-      // 2. Send to Backend
       try {
         const response = await fetch(WORKER_URL, {
           method: "POST",
@@ -52,7 +49,6 @@
         });
         const data = await response.json();
 
-        // 3. Add AI Reply
         history.innerHTML += `<div class="message assistant">${data.response}</div>`;
         history.scrollTop = history.scrollHeight;
       } catch (e) {
