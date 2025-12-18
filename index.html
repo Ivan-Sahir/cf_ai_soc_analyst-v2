@@ -3,24 +3,12 @@
 <head>
     <title>AI SOC Analyst V2</title>
     <style>
-
         body { font-family: monospace; padding: 20px; max-width: 800px; margin: auto; background: #f0f0f0; }
         textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
         button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
         button:hover { background: #0056b3; }
         button:disabled { background: #ccc; cursor: wait; }
-
-        #chat-history { 
-            margin-top: 20px; 
-            border: 1px solid #ddd; 
-            padding: 20px; 
-            background: white; 
-            min-height: 200px; 
-            max-height: 500px; 
-            overflow-y: auto; 
-        }
-        
-
+        #chat-history { margin-top: 20px; border: 1px solid #ddd; padding: 20px; background: white; min-height: 200px; max-height: 500px; overflow-y: auto; }
         .user-msg { color: blue; margin-bottom: 10px; font-weight: bold; }
         .ai-msg { color: green; margin-bottom: 20px; white-space: pre-wrap; }
         .error { color: red; }
@@ -50,33 +38,36 @@
 
             if (!text) return alert("Please enter a log.");
 
-
             history.innerHTML += `<div class="user-msg">USER: ${text}</div>`;
-            input.value = ''; // Clear box
-
+            input.value = '';
 
             btn.disabled = true;
             btn.innerText = "Analyzing...";
-  
+            
             const aiBubble = document.createElement("div");
             aiBubble.className = "ai-msg";
             aiBubble.innerText = "⏳ Analyzing...";
             history.appendChild(aiBubble);
-            history.scrollTop = history.scrollHeight; 
+            history.scrollTop = history.scrollHeight;
 
             try {
-
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: text })
                 });
+                
                 const data = await response.json();
 
-                aiBubble.innerText = "AI: " + data.response;
+                if (data.error) {
+                    aiBubble.innerText = data.error;
+                    aiBubble.className = "error";
+                } else {
+                    aiBubble.innerText = "AI: " + data.response;
+                }
 
             } catch (err) {
-                aiBubble.innerText = "Error: " + err.message;
+                aiBubble.innerText = "Connection Error: " + err.message;
                 aiBubble.className = "error";
             }
 
