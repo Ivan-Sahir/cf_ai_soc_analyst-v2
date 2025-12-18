@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SOC Assistant V2 (Memory Enabled)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #f4f4f9; }
+    .chat-container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    h1 { color: #2c3e50; text-align: center; }
+    .history { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; background: #fff; }
+    .message { margin-bottom: 1rem; padding: 0.8rem; border-radius: 6px; max-width: 80%; }
+    .user { background: #e3f2fd; color: #0d47a1; margin-left: auto; border-bottom-right-radius: 0; }
+    .assistant { background: #f1f8e9; color: #2e7d32; margin-right: auto; border-bottom-left-radius: 0; white-space: pre-wrap; }
+    .controls { display: flex; gap: 10px; }
+    input { flex: 1; padding: 1rem; border: 1px solid #ccc; border-radius: 6px; }
+    button { background: #f6821f; color: white; border: none; padding: 0 2rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #e65100; }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <h1>🛡️ SOC Assistant V2 (Durable Objects)</h1>
+    <div class="history" id="history">
+      <div class="message assistant">Hello. I am your SOC Assistant. I remember our conversation context. Paste a log to begin.</div>
+    </div>
+    <div class="controls">
+      <input type="text" id="userInput" placeholder="Type a message or paste a log..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ REPLACE THIS WITH YOUR WORKER URL
+    const WORKER_URL = "https://cf-ai-soc-analyst-v2.ryan-benson-lab.workers.dev"; 
+
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const history = document.getElementById('history');
+      const text = input.value.trim();
+      if (!text) return;
+
+      // 1. Add User Message
+      history.innerHTML += `<div class="message user">${text}</div>`;
+      input.value = '';
+      history.scrollTop = history.scrollHeight;
+
+      // 2. Send to Backend
+      try {
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+
+        // 3. Add AI Reply
+        history.innerHTML += `<div class="message assistant">${data.response}</div>`;
+        history.scrollTop = history.scrollHeight;
+      } catch (e) {
+        history.innerHTML += `<div class="message assistant" style="color:red">Error: ${e.message}</div>`;
+      }
+    }
+    
+    document.getElementById("userInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
