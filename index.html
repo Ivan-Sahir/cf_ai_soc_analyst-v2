@@ -1,54 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI SOC Analyst V2</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI SOC Analyst</title>
     <style>
-        body { font-family: monospace; padding: 20px; max-width: 800px; margin: auto; background: #f0f0f0; }
-        textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #ccc; cursor: wait; }
-        #chat-history { margin-top: 20px; border: 1px solid #ddd; padding: 20px; background: white; min-height: 200px; max-height: 500px; overflow-y: auto; }
-        .user-msg { color: blue; margin-bottom: 10px; font-weight: bold; }
-        .ai-msg { color: green; margin-bottom: 20px; white-space: pre-wrap; }
-        .error { color: red; }
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background: #f0f0f0; }
+        #chat-box { background: white; padding: 1rem; height: 400px; overflow-y: scroll; border: 1px solid #ccc; margin-bottom: 1rem; }
+        .message { margin-bottom: 0.5rem; padding: 0.5rem; border-radius: 4px; }
+        .user { background: #e3f2fd; text-align: right; }
+        .assistant { background: #d1e7dd; text-align: left; }
+        #input-area { display: flex; gap: 0.5rem; }
+        input { flex-grow: 1; padding: 0.5rem; }
+        button { padding: 0.5rem 1rem; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <h2>🛡️ SOC Assistant (Memory Enabled)</h2>
-    <p>Paste a log line or ask a question about previous logs.</p>
-    
-    <textarea id="userInput" placeholder="Paste log here..."></textarea>
-    <br>
-    <button onclick="sendMessage()">Analyze Log</button>
-
-    <div id="chat-history">
-        <div class="ai-msg">System: I am ready. I remember context.</div>
+    <h1>🛡️ AI SOC Analyst</h1>
+    <div id="chat-box"></div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Paste a security log here..." />
+        <button onclick="sendMessage()">Analyze</button>
     </div>
 
     <script>
-        const WORKER_URL = "https://cf-ai-soc-analyst-v2.pages.dev"; 
+        const WORKER_URL = "https://cf-ai-soc-analyst-v2.ryan-benson-lab.workers.dev"; 
 
         async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const history = document.getElementById('chat-history');
-            const btn = document.querySelector('button');
-            const text = input.value.trim();
+            const input = document.getElementById("user-input");
+            const chatBox = document.getElementById("chat-box");
+            const text = input.value;
+            if (!text) return;
 
-            if (!text) return alert("Please enter a log.");
-
-            history.innerHTML += `<div class="user-msg">USER: ${text}</div>`;
-            input.value = '';
-
-            btn.disabled = true;
-            btn.innerText = "Analyzing...";
-            
-            const aiBubble = document.createElement("div");
-            aiBubble.className = "ai-msg";
-            aiBubble.innerText = "⏳ Analyzing...";
-            history.appendChild(aiBubble);
-            history.scrollTop = history.scrollHeight;
+            chatBox.innerHTML += `<div class="message user"><strong>You:</strong> ${text}</div>`;
+            input.value = "";
 
             try {
                 const response = await fetch(WORKER_URL, {
@@ -56,24 +41,15 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: text })
                 });
-                
+
                 const data = await response.json();
 
-                if (data.error) {
-                    aiBubble.innerText = data.error;
-                    aiBubble.className = "error";
-                } else {
-                    aiBubble.innerText = "AI: " + data.response;
-                }
-
-            } catch (err) {
-                aiBubble.innerText = "Connection Error: " + err.message;
-                aiBubble.className = "error";
+                chatBox.innerHTML += `<div class="message assistant"><strong>SOC AI:</strong> ${data.reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                console.error("Error:", error);
+                chatBox.innerHTML += `<div class="message assistant" style="color:red;">Error connecting to AI.</div>`;
             }
-
-            btn.disabled = false;
-            btn.innerText = "Analyze Log";
-            history.scrollTop = history.scrollHeight;
         }
     </script>
 </body>
