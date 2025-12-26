@@ -30,26 +30,26 @@
             const input = document.getElementById("user-input");
             const chatBox = document.getElementById("chat-box");
             const text = input.value;
+
             if (!text) return;
 
+
             chatBox.innerHTML += `<div class="message user"><strong>You:</strong> ${text}</div>`;
-            input.value = "";
+            input.value = ""; 
+            const response = await fetch(WORKER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            });
 
-            try {
-                const response = await fetch(WORKER_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: text })
-                });
+            const data = await response.json();
 
-                const data = await response.json();
-
+            if (data.reply) {
                 chatBox.innerHTML += `<div class="message assistant"><strong>SOC AI:</strong> ${data.reply}</div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            } catch (error) {
-                console.error("Error:", error);
-                chatBox.innerHTML += `<div class="message assistant" style="color:red;">Error connecting to AI.</div>`;
+            } else {
+                chatBox.innerHTML += `<div class="message assistant" style="color:red;">Error: Empty response from AI.</div>`;
             }
+
         }
     </script>
 </body>
